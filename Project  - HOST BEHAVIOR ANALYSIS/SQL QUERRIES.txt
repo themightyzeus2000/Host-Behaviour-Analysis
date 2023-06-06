@@ -1,0 +1,172 @@
+--Solution 1
+
+--Acceptance rate:
+--This query groups the hosts by whether they are Superhosts or not and calculates the average acceptance rate for each group.
+SELECT
+
+host_is_superhost,
+AVG(host_acceptance_rate) AS avg_acceptance_rate
+FROM
+hopeful-grid-384010.rental.host
+GROUP BY
+host_is_superhost;
+
+--Response rate:
+--This query groups the hosts by whether they are Superhosts or not and calculates the average response time for each group. We use a CASE statement to convert the response time into a numerical value for easier calculation.
+SELECT
+host_is_superhost,
+AVG(CASE
+WHEN host_response_time = 'within an hour' THEN 1
+WHEN host_response_time = 'within a few hours' THEN 2
+WHEN host_response_time = 'within a day' THEN 3
+ELSE 4
+END) AS avg_response_time
+FROM
+hopeful-grid-384010.rental.host
+GROUP BY
+host_is_superhost;
+
+
+--Instant booking:
+--This query counts the number of listings for each host that have instant booking enabled, grouped by whether the host is a Superhost or not.
+SELECT
+host_is_superhost,
+COUNT(CASE
+WHEN instant_bookable = TRUE THEN 1
+END) AS instant_bookable_count
+FROM
+hopeful-grid-384010.rental.listing
+JOIN hopeful-grid-384010.rental.host ON listing.host_id = host.host_id
+GROUP BY
+host_is_superhost;
+
+--Profile picture:
+--This query counts the number of hosts who have a profile picture displayed on their listing, grouped by whether the host is a Superhost or not.
+SELECT
+host_is_superhost,
+COUNT(CASE
+WHEN host_has_profile_pic = TRUE THEN 1
+END) AS profile_pic_count
+FROM
+hopeful-grid-384010.rental.host
+GROUP BY
+host_is_superhost;
+
+--Identity verified:
+--This query counts the number of hosts who have verified their identity, grouped by whether the host is a Superhost or not.
+SELECT
+host_is_superhost,
+COUNT(CASE
+WHEN host_identity_verified = TRUE THEN 1
+END) AS identity_verified_count
+FROM
+hopeful-grid-384010.rental.host
+GROUP BY
+host_is_superhost;
+
+--Review scores:
+--This query groups the hosts by whether they are Superhosts or not and calculates the average review score for each group.
+SELECT
+host_is_superhost,
+AVG(review_scores_rating) AS avg_review_score
+FROM
+hopeful-grid-384010.rental.listing
+JOIN hopeful-grid-384010.rental.host ON listing.host_id = host.host_id
+GROUP BY
+host_is_superhost;
+
+--Average number of bookings per month:
+--This query calculates the average number of bookings per month for each host, grouped by whether the host is a Superhost or not. We use the calendar table to count the number of bookings per month, assuming each booking is for one day. The division by 24 converts the count to an average per month.
+SELECT
+  host_is_superhost,
+  COUNT(bookings.id) / 24 AS avg_bookings_per_month
+FROM
+  hopeful-grid-384010.rental.host
+  JOIN hopeful-grid-384010.rental.listing ON host.host_id = listing.host_id
+  JOIN (
+    SELECT
+      id,
+      listing_id,
+      DATE(date) AS booking_date
+    FROM
+      hopeful-grid-384010.rental.Availability
+    WHERE
+      available = TRUE
+  ) AS bookings ON listing.id = bookings.listing_id
+GROUP BY
+  host_is_superhost;
+
+
+--Solution 2
+
+  --Response rate:
+  --This query will give the average response rate among Superhosts.
+ SELECT AVG(host_response_rate) AS avg_response_rate
+FROM hopeful-grid-384010.rental.host
+WHERE host_is_superhost = TRUE;
+
+  --Acceptance rate:
+  --This query will give the average acceptance rate among Superhosts.
+SELECT AVG(host_acceptance_rate) AS avg_acceptance_rate
+FROM hopeful-grid-384010.rental.host
+WHERE host_is_superhost = TRUE;
+
+  --Review scores:
+  --This query will give the average review score rating
+
+SELECT AVG(review_scores_rating) AS avg_review_scores_rating
+FROM hopeful-grid-384010.rental.listing
+WHERE host_id IN (
+  SELECT host_id
+  FROM hopeful-grid-384010.rental.host
+  WHERE host_is_superhost = TRUE
+);
+
+
+--Solution 3
+
+SELECT 
+    CASE 
+        WHEN h.host_is_superhost = TRUE THEN 'Super Host'
+        ELSE 'Other Host'
+    END AS host_category,
+    SUM(CASE WHEN r.comments LIKE '%amazing%' THEN 1 ELSE 0 END) AS amazing_count,
+    SUM(CASE WHEN r.comments LIKE '%fantastic%' THEN 1 ELSE 0 END) AS fantastic_count,
+    SUM(CASE WHEN r.comments LIKE '%exceptional%' THEN 1 ELSE 0 END) AS exceptional_count,
+    SUM(CASE WHEN r.comments LIKE '%immaculate%' THEN 1 ELSE 0 END) AS immaculate_count,
+    SUM(CASE WHEN r.comments LIKE '%welcoming%' THEN 1 ELSE 0 END) AS welcoming_count,
+    SUM(CASE WHEN r.comments LIKE '%helpful%' THEN 1 ELSE 0 END) AS helpful_count,
+    SUM(CASE WHEN r.comments LIKE '%friendly%' THEN 1 ELSE 0 END) AS friendly_count,
+    SUM(CASE WHEN r.comments LIKE '%responsive%' THEN 1 ELSE 0 END) AS responsive_count,
+    SUM(CASE WHEN r.comments LIKE '%average%' THEN 1 ELSE 0 END) AS average_count,
+    SUM(CASE WHEN r.comments LIKE '%mediocre%' THEN 1 ELSE 0 END) AS mediocre_count,
+    SUM(CASE WHEN r.comments LIKE '%disappointing%' THEN 1 ELSE 0 END) AS disappointing_count,
+    SUM(CASE WHEN r.comments LIKE '%dirty%' THEN 1 ELSE 0 END) AS dirty_count,
+    SUM(CASE WHEN r.comments LIKE '%unresponsive%' THEN 1 ELSE 0 END) AS unresponsive_count,
+    SUM(CASE WHEN r.comments LIKE '%unhelpful%' THEN 1 ELSE 0 END) AS unhelpful_count,
+    SUM(CASE WHEN r.comments LIKE '%noisy%' THEN 1 ELSE 0 END) AS noisy_count,
+    SUM(CASE WHEN r.comments LIKE '%uncomfortable%' THEN 1 ELSE 0 END) AS uncomfortable_count
+FROM 
+    hopeful-grid-384010.rental.host h
+    JOIN hopeful-grid-384010.rental.listing l ON h.host_id = l.host_id
+    JOIN hopeful-grid-384010.rental.reviews r ON l.id = r.listing_id
+GROUP BY 
+    host_category;
+
+
+
+--Solution 4
+
+--This will give us the overall average number of bedrooms and beds for Superhosts and Other Hosts. 
+
+SELECT 
+  host_is_superhost, 
+  AVG(bedrooms) AS avg_bedrooms, 
+  AVG(beds) AS avg_beds
+FROM 
+  hopeful-grid-384010.rental.listing 
+  JOIN hopeful-grid-384010.rental.host ON listing.host_id = host.host_id
+WHERE 
+  property_type IS NOT NULL
+GROUP BY 
+  host_is_superhost
